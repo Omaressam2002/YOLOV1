@@ -5,56 +5,58 @@ from utils import iou,squared_err
 #y = [[0->19] prob classes, [prob obj , x,y,w,h],[[prob obj , x,y,w,h]]
 
 class loss(nn.Module):
-    def __init__(self,grids=7,boxes=2,classes=20):
+    def __init__(self,grids=7,boxes=2,classes=3,lambdas : tuple = (0.5,5)):
         super(loss,self).__init__()
-        self.G= grids
-        self.B= boxes
-        self.C= classes
-        self.noobj_pen = 0.5
-        self.coord_pen = 5
+        self.G = grids
+        self.B = boxes
+        self.C = classes
+
+        # lambdas
+        assert len(lambdas) == 2 , "lambdas should be of length 2"
+        self.noobj_pen = lambdas[0]
+        self.coord_pen = lambdas[1]
        
     def forward(self, prediction,target):
         
-        #prediction = prediction.reshape(-1,self.G,self.G,self.C+(5*self.B))
-        
-        iou1 = iou(prediction[...,21:25],target[...,21:25])
-        iou2 = iou(prediction[...,26:30],target[...,21:25])
+        iou1 = iou(prediction[...,self.C+1:self.C+5],target[...,self.C+1:self.C+5])
+        iou2 = iou(prediction[...,self.C+6:self.C+10],target[...,self.C+1:self.C+5])
         
         ious = torch.cat([iou1.unsqueeze(0),iou2.unsqueeze(0)],dim=0) # squeeze to add the dimension you will concatenate on
-        
+
+        # to get the boxes that overlap the most with true box for each grid and for each example
         max_iou,box_idx = torch.max(ious,dim=0)
         
+        #_:_ to keep it 4 dimensional
+        obj_exists = target[...,self.C:self.C+1] 
         
-        obj_exists = target[...,20:21] #20:21 to keep it 4 dimensional
-        
-        #Center Loss
-        # if obj_exists then calc else put = 0
-        # box_idx either 0 or 1 and if 0 calc 1*box1 + 0*box2 if 1 calc 0*box1+ 1*box2
+        # Center Loss
         boxes = obj_exists*(
-            (1-box_idx)*prediction[...,21:25] + 
-            (box_idx)*prediction[...,26:30]
+            (1-box_idx)*prediction[...,self.C+1:self.C+5] + 
+            (box_idx)*prediction[...,self.C+6:self.C+10]
         )
         
-        target_boxes = obj_exists*target[...,21:25]
-        boxes[...,2:4] = torch.sign(boxes[...,2:4]) * torch.sqrt(torch.abs(boxes[...,2:4] +1e-6))
-        target_boxes[...,2:4] = torch.sign(target_boxes[...,2:4]) * torch.sqrt(torch.abs(target_boxes[...,2:4]))
-        box_loss = self.coord_pen*squared_err(boxes , target_boxes)
+        target_boxes = obj_exists * target[...,self.C+1:self.C+5]
+        # take the square root for the  ws and hs 
+        boxes[...,2:4] = torch.sign(boxes[...,2:4]) * torch.sqrt(torch.abs(boxes[...,2:4] + 1e-06)) 
+        target_boxes[...,2:4] = torch.sign(target_boxes[...,2:4]) * torch.sqrt(torch.abs(target_boxes[...,2:4] + 1e-06))
+        box_loss = self.coord_pen * squared_err(boxes , target_boxes)
 
         
         #Object Loss
+        # penalty when pred conf is low and there exists an object
         pred_box = obj_exists*(
-            (1-box_idx)*prediction[...,20:21] + 
-            (box_idx)*prediction[...,25:26])
+            (1-box_idx)*prediction[...,self.C:self.C+1] + 
+            (box_idx)*prediction[...,self.C+5:self.C+6])
         
-        target_obj = obj_exists*target[...,20:21]
+        target_obj = obj_exists*target[...,self.C:self.C+1]
         obj_loss = squared_err(pred_box,target_obj)
         
         
         #No Object Loss
-        #(1-obj_exists)*obj_exists will always be zero then if the object exists pred will be zero due to (1-obj_exists)*(prediction[...,20:21])
-        #if object exists and pred is not zero here is the penalty
-        nonpred_box1 = (1-obj_exists)*(prediction[...,20:21]) 
-        nonpred_box2 = (1-obj_exists)*(prediction[...,25:26])
+        # penalty when pred conf is high and there is no object
+        # can vary the penalty strength with noobj_pen
+        nonpred_box1 = (1-obj_exists)*(prediction[...,self.C:self.C+1]) 
+        nonpred_box2 = (1-obj_exists)*(prediction[...,self.C+5:self.C+6])
         noobj_loss = self.noobj_pen*(
             squared_err(nonpred_box1,(1-obj_exists)*obj_exists) + 
             squared_err(nonpred_box2,(1-obj_exists)*obj_exists))
@@ -62,8 +64,8 @@ class loss(nn.Module):
 
         
         #Class Probs Loss
-        class_loss = squared_err(obj_exists*(prediction[...,0:20]),obj_exists*(target[...,0:20]))
+        # penalty when class conf is high and it is predicted low and vice verse
+        class_loss = squared_err(obj_exists*(prediction[...,0:self.C]),obj_exists*(target[...,0:self.C]))
         
         total_loss = box_loss + obj_loss + noobj_loss + class_loss
         return total_loss
-#done

@@ -13,8 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# imageNet classes File
+
 from collections import OrderedDict
 
+def ret_classes():
+    for idx,key in enumerate(IMAGENET2012_CLASSES):
+        IMAGENET2012_CLASSES[key] = idx 
+    return IMAGENET2012_CLASSES
 
 IMAGENET2012_CLASSES = OrderedDict(
     {
@@ -1021,7 +1027,3 @@ IMAGENET2012_CLASSES = OrderedDict(
     }
 )
 
-def ret_classes():
-    for idx,key in enumerate(IMAGENET2012_CLASSES):
-        IMAGENET2012_CLASSES[key] = idx 
-    return IMAGENET2012_CLASSES

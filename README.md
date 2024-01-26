@@ -1,6 +1,7 @@
 # YOLOV1
 *Architecture and training was inspired by the original YOLOV1 paper : https://paperswithcode.com/paper/you-only-look-once-unified-real-time-object#code *
-*Used the model to create a Swift APP for Object Detection , repo link : https://github.com/Omaressam2002/BasketBallDetectionAPP .
+
+*Used the model to create a Swift APP for Object Detection , repo link : https://github.com/Omaressam2002/BasketBallDetectionAPP . *
 
 *Training :*
 - Pretrainig :

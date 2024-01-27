@@ -5,7 +5,7 @@
 
 **Training** :
 - Pretrainig :
-  - For pretraining we use the first 20 convolutional layers , Dakrnet , followed by an average-pooling layer and a fully connected layer 
+  - For pretraining we use the first 20 convolutional layers -Dakrnet- followed by an average-pooling layer and a fully connected layer 
   - trained this network on the ImageNet data set of 1000 class : https://www.image-net.org 
   - trained for 3 weeks and acheived 65% top 5 accuracy
 - Training :

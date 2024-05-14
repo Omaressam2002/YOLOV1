@@ -1,5 +1,5 @@
 # YOLOV1
-**This project detects players, basketballs, and hoops in a picture using the YOLOv1 algorithm implemented and trained from scratch with no pretrained weights**
+**This project detects players, basketballs, and hoops in a picture using the YOLOv1 algorithm implemented and trained from scratch with no pretrained weights.**
 
 
 **Architecture and training was inspired by the original YOLOV1 paper**: https://openaccess.thecvf.com/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf
